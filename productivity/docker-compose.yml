@@ -1,0 +1,87 @@
+version: "3.8"
+services:
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing
+    hostname: syncthing #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /docker/productivity/syncthing/config:/config
+      - /mnt/nas/:/mnt/nas/
+      - /docker/:/mnt/docker/ # Docker folder on local machine
+    ports:
+      - 8384:8384
+      - 22000:22000/tcp
+      - 22000:22000/udp
+      - 21027:21027/udp
+    restart: unless-stopped
+  drawio:
+    image: jgraph/drawio
+    container_name: drawio
+    restart: unless-stopped
+    ports:
+      - 8081:8080
+      - 8443:8443
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - /docker/productivity/homarr/configs:/app/data/configs
+      - /docker/productivity/homarr/icons:/app/public/icons
+      - /docker/productivity/homarr/data:/data
+    ports:
+      - '7575:7575'
+
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /docker/productivity/hass/home-assistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+  nodered:
+    container_name: nodered
+    image: nodered/node-red
+    ports:
+      - 1880:1880
+    volumes:
+      - /docker/productivity/hass/nodered/data:/data
+    depends_on:
+      - homeassistant
+      - mosquitto
+    environment:
+      - TZ=America/Chicago
+    restart: unless-stopped
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - 1883:1883
+      - 9001:9001
+    volumes:
+      - "/docker/productivity/hass/mosquitto/config:/mosquitto/config"
+      - "/docker/productivity/hass/mosquitto/data:/mosquitto/data"
+      - "/docker/productivity/hass/mosquitto/log:/mosquitto/log"
+    environment:
+      - TZ=<TIMEZONE>
+    user: "${PUID}:${PGID}"
+  hass-configurator:
+    image: "causticlab/hass-configurator-docker:latest"
+    restart: always
+    ports:
+      - "3218:3218/tcp"
+    volumes:
+      - "/docker/productivity/hass/configurator-config:/config"
+      - "/docker/productivity/hass/hass-config:/hass-config"

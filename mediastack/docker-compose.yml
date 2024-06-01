@@ -1,0 +1,157 @@
+version: '3'
+services:
+  overseerr:
+    image: 'sctx/overseerr:latest'
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - UMASK_SET=000
+      - DELUGE_LOGLEVEL=error
+      - PORT=5055
+    ports:
+      - '5055:5055'
+    volumes:
+      - '/docker/mediastack/overseerr/:/app/config'
+    restart: unless-stopped
+  radarr:
+    container_name: radarr
+    restart: unless-stopped
+    ports:
+      - '7878:7878'
+    volumes:
+      - '/docker/mediastack/radarr/:/config'
+      - '/mnt/nas/media/movies/:/mnt/movies'
+      - '/mnt/nas/downloads/:/downloads'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    image: linuxserver/radarr
+  sonarr:
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - '8989:8989'
+    volumes:
+      - '/docker/mediastack/sonarr/:/config'
+      - '/mnt/nas/media/tv_shows/:/tv'
+      - '/mnt/nas/downloads/:/downloads'
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    image: linuxserver/sonarr
+  tautulli:
+    image: ghcr.io/tautulli/tautulli
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - /docker/mediastack/tautulli/:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    ports:
+      - 8181:8181
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /docker/mediastack/sabnzbd/:/config
+      - /mnt/nas/downloads/:/downloads
+      - /mnt/nas/downloads/incomplete:/incomplete-downloads
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /docker/mediastack/prowlarr/:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  readarr:
+    image: lscr.io/linuxserver/readarr:nightly
+    container_name: readarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /docker/mediastack/readarr/:/config
+      - /mnt/nas/media/books/:/books
+      - /mnt/nas/media/unsorted_books/:/unsorted_books
+      - /mnt/nas/downloads/:/downloads
+    ports:
+      - 8787:8787
+    restart: unless-stopped
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - VERSION=docker
+      - PLEX_CLAIM= #optional
+    volumes:
+      - /docker/mediastack/plex/config:/config
+      - /mnt/nas/media/tv_shows:/tv
+      - /mnt/nas/media/movies:/movies
+    restart: unless-stopped
+  ersatztv:
+    container_name: ersatztv
+    environment:
+      - TZ=America/Chicago
+    ports:
+      - 8409:8409
+    volumes:
+      - /docker/mediastack/erastztv/:/root/.local/share/ersatztv
+      - /mnt/nas/media/:/ro
+    restart: unless-stopped
+    image: jasongdove/ersatztv:latest-vaapi
+  tubesync:
+    image: ghcr.io/meeb/tubesync:latest
+    container_name: tubesync
+    restart: unless-stopped
+    ports:
+      - 4848:4848
+    volumes:
+      - /docker/mediastack/tubesync/config/:/config
+      - /mnt/nas/downloads/youtube/:/downloads
+    environment:
+      - TZ=America/Chicago
+      - PUID=1000
+      - PGID=1000
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /docker/mediastack/bazarr/config:/config
+      - /mnt/nas/media/tv_shows:/tv
+      - /mnt/nas/media/movies:/movies
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: bazarr tubesync ersatztv plex readarr prowlarr tautulli sabnzbd sonarr radarr overseerr

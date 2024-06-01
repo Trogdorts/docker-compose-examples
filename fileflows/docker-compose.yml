@@ -1,0 +1,71 @@
+version: '3.8'
+services:
+  fileflows:
+    image: revenz/fileflows:latest
+    container_name: fileflows-server
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+    environment:
+      - TZ=America/Chicago
+      - TempPathHost=/temp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /docker/fileflows/fileflows-server/data:/app/Data
+      - /docker/fileflows/fileflows-server/logs:/app/Logs
+      - /docker/fileflows/fileflows-server/temp:/temp
+      - /mnt/nas/media:/media
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+  fileflows-node-1:
+    image: revenz/fileflows:latest
+    container_name: fileflows-node-1
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+    runtime: nvidia
+    environment:
+      - TZ=America/Chicago
+      - TempPathHost=/temp
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      - NVIDIA_VISIBLE_DEVICES=GPU-d39b936c-1c18-d0c1-2b45-c429aae890ba
+      - FFNODE=1
+      - NodeName=fileflows-node-1
+      - ServerUrl=http://192.168.1.5:5000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /docker/fileflows/fileflows-node-1/data:/app/Data
+      - /docker/fileflows/fileflows-node-1/logs:/app/Logs
+      - /docker/fileflows/fileflows-node-1/temp:/temp
+      - /mnt/nas/media:/media
+    ports:
+      - 5001:5000
+    restart: unless-stopped
+  fileflows-node-2:
+    image: revenz/fileflows:latest
+    container_name: fileflows-node-2
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+    runtime: nvidia
+    environment:
+      - TZ=America/Chicago
+      - TempPathHost=/temp
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      - NVIDIA_VISIBLE_DEVICES=GPU-b778b9ec-98fa-931e-2871-1fea83ceb9cf
+      - FFNODE=1
+      - NodeName=fileflows-node-2
+      - ServerUrl=http://192.168.1.5:5000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /docker/fileflows/fileflows-node-1/data:/app/Data
+      - /docker/fileflows/fileflows-node-1/logs:/app/Logs
+      - /docker/fileflows/fileflows-node-1/temp:/temp
+      - /mnt/nas/media:/media
+    ports:
+      - 5002:5000
+    restart: unless-stopped
